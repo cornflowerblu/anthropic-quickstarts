@@ -306,12 +306,11 @@ function ChatArea() {
   const [showAvatar, setShowAvatar] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [selectedKnowledgeBase, setSelectedKnowledgeBase] = useState(
-    "your-knowledge-base-id",
-  );
+  const [selectedKnowledgeBase, setSelectedKnowledgeBase] =
+    useState("DDNXHECDGH");
 
   const knowledgeBases: KnowledgeBase[] = [
-    { id: "your-knowledge-base-id", name: "Your KB Name" },
+    { id: "DDNXHECDGH", name: "avm-anthropic-chatbot-kt" },
     // Add more knowledge bases as needed
   ];
 
@@ -352,12 +351,12 @@ function ChatArea() {
 
       window.addEventListener(
         "updateSidebar" as any,
-        handleUpdateSidebar as EventListener,
+        handleUpdateSidebar as EventListener
       );
       return () =>
         window.removeEventListener(
           "updateSidebar" as any,
-          handleUpdateSidebar as EventListener,
+          handleUpdateSidebar as EventListener
         );
     }
   }, []);
@@ -372,12 +371,12 @@ function ChatArea() {
 
       window.addEventListener(
         "updateRagSources" as any,
-        handleUpdateRagSources as EventListener,
+        handleUpdateRagSources as EventListener
       );
       return () =>
         window.removeEventListener(
           "updateRagSources" as any,
-          handleUpdateRagSources as EventListener,
+          handleUpdateRagSources as EventListener
         );
     }
   }, []);
@@ -399,7 +398,7 @@ function ChatArea() {
   };
 
   const handleSubmit = async (
-    event: React.FormEvent<HTMLFormElement> | string,
+    event: React.FormEvent<HTMLFormElement> | string
   ) => {
     if (typeof event !== "string") {
       event.preventDefault();
@@ -470,7 +469,7 @@ function ChatArea() {
       console.log("⬅️ Received response from API:", data);
 
       const suggestedQuestionsHeader = response.headers.get(
-        "x-suggested-questions",
+        "x-suggested-questions"
       );
       if (suggestedQuestionsHeader) {
         data.suggested_questions = JSON.parse(suggestedQuestionsHeader);
@@ -481,7 +480,7 @@ function ChatArea() {
         const ragProcessed = performance.now();
         logDuration(
           "🔍 RAG Processing Duration",
-          ragProcessed - responseReceived,
+          ragProcessed - responseReceived
         );
         const sources = JSON.parse(ragHeader);
         window.dispatchEvent(
@@ -491,7 +490,7 @@ function ChatArea() {
               query: userMessage.content,
               debug: data.debug,
             },
-          }),
+          })
         );
       }
 
@@ -524,7 +523,7 @@ function ChatArea() {
         window.dispatchEvent(
           new CustomEvent("agentRedirectRequested", {
             detail: data.redirect_to_agent,
-          }),
+          })
         );
       }
     } catch (error) {
