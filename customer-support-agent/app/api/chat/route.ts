@@ -232,13 +232,11 @@ export async function POST(req: Request) {
       content: "{",
     });
 
-    console.log("🔍 Messages to AI:", anthropicMessages[0].content);
+    console.log("🔍 Messages to AI:", latestMessage);
 
     const redisClient = await redisClientPromise;
 
-    const cachedResponse = await redisClient.get(
-      JSON.stringify(anthropicMessages[0].content)
-    );
+    const cachedResponse = await redisClient.get(JSON.stringify(latestMessage));
 
     const formattedResponse = {
       messages: [
@@ -246,6 +244,29 @@ export async function POST(req: Request) {
         { role: "assistant", content: cachedResponse },
       ],
     };
+
+    if (cachedResponse == JSON.stringify(latestMessage)) {
+      console.log("🔍 Cached response found!!!");
+      // Parse the cached response to ensure it matches the expected format
+      const parsedCachedResponse = cachedResponse
+        ? JSON.parse(cachedResponse)
+        : null;
+      const validatedCachedResponse =
+        responseSchema.parse(parsedCachedResponse);
+
+      // Wrap the validated response properly for the chatbot
+      const responseWithId = {
+        id: crypto.randomUUID(),
+        ...validatedCachedResponse,
+      };
+
+      console.log("Returning cached response:", formattedResponse);
+
+      return new Response(JSON.stringify(responseWithId), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     if (cachedResponse) {
       console.log("🔍 Cached response found!!!");
@@ -307,7 +328,7 @@ export async function POST(req: Request) {
 
     try {
       await redisClient.set(
-        JSON.stringify(anthropicMessages[0].content),
+        JSON.stringify(latestMessage),
         JSON.stringify(responseWithId),
         { EX: 3600 }
       );
