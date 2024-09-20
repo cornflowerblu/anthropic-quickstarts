@@ -240,11 +240,35 @@ export async function POST(req: Request) {
       JSON.stringify(anthropicMessages[0].content)
     );
 
+    const formattedResponse = {
+      messages: [
+        { role: "system", content: "..." },
+        { role: "assistant", content: cachedResponse },
+      ],
+    };
+
     if (cachedResponse) {
       console.log("🔍 Cached response found!!!");
-      console.log("resposne:" + cachedResponse);
-      return new Response(JSON.stringify(cachedResponse), { status: 200 });
+      // Parse the cached response to ensure it matches the expected format
+      const parsedCachedResponse = JSON.parse(cachedResponse);
+      const validatedCachedResponse =
+        responseSchema.parse(parsedCachedResponse);
+
+      // Wrap the validated response properly for the chatbot
+      const responseWithId = {
+        id: crypto.randomUUID(),
+        ...validatedCachedResponse,
+      };
+
+      console.log("Returning cached response:", formattedResponse);
+
+      return new Response(JSON.stringify(responseWithId), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
     }
+
+    console.log("This should not return if a cached response is found");
 
     const response = await anthropic.messages.create({
       model: model,
@@ -276,16 +300,20 @@ export async function POST(req: Request) {
 
     const validatedResponse = responseSchema.parse(parsedResponse);
 
-    await redisClient.set(
-      JSON.stringify(anthropicMessages[0].content),
-      JSON.stringify(validatedResponse),
-      { EX: 3600 }
-    );
-
     const responseWithId = {
       id: crypto.randomUUID(),
       ...validatedResponse,
     };
+
+    try {
+      await redisClient.set(
+        JSON.stringify(anthropicMessages[0].content),
+        JSON.stringify(responseWithId),
+        { EX: 3600 }
+      );
+    } catch (error) {
+      console.error("Error caching response:", error);
+    }
 
     // Check if redirection to a human agent is needed
     if (responseWithId.redirect_to_agent?.should_redirect) {
